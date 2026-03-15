@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,18 +17,22 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 
+import com.sk89q.jnbt.IntArrayTag;
+import com.sk89q.jnbt.ListTag;
+import com.sk89q.jnbt.StringTag;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.xzavier0722.mc.plugin.slimefun4.storage.controller.BlockDataController;
 
-import city.norain.slimefun4.SlimefunExtended;
 import io.github.thebusybiscuit.exoticgarden.ExoticGarden;
 import io.github.thebusybiscuit.exoticgarden.Tree;
 import io.github.thebusybiscuit.exoticgarden.schematics.org.jnbt.ByteArrayTag;
@@ -38,6 +43,7 @@ import io.github.thebusybiscuit.exoticgarden.schematics.org.jnbt.Tag;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.utils.tags.SlimefunTag;
+
 
 /*
  *
@@ -67,7 +73,7 @@ import io.github.thebusybiscuit.slimefun4.utils.tags.SlimefunTag;
 public class Schematic {
 
 	// ConcurrentHashMap 的 computeIfAbsent 是原子操作
-	private static ConcurrentHashMap<String, BlockState> threadSafeHeadCache = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap<String, BaseBlock> threadSafeHeadCache = new ConcurrentHashMap<>();
 	
     private final short[] blocks;
     private final byte[] data;
@@ -85,28 +91,28 @@ public class Schematic {
         this.name = name;
     }
 
-    private static BlockState getCachedHead(String base64Value, int facing) {
-        String cacheKey = base64Value + "|" + facing;
+    private static BaseBlock getCachedHead(@NotNull String base64Value, int rotationIndex) {
+        String cacheKey = base64Value + "|" + rotationIndex;
         
-        // 这行代码的作用：
-        // 1. 检查 cacheKey 是否已经在 HEAD_CACHE 中
-        // 2. 如果存在：直接返回已有的 BlockState
-        // 3. 如果不存在：执行 lambda 表达式创建新的 BlockState
-        // 4. 将新创建的 BlockState 存入缓存
-        // 5. 返回这个 BlockState
+        // 1. 创建 NBT 数据
         return threadSafeHeadCache.computeIfAbsent(cacheKey, k -> {
-            // 这个 lambda 只在键不存在时执行
-        	String blockStateStr = "minecraft:player_head[rotation=" + facing + "]";
-        	String componentPart;
-            if (SlimefunExtended.getMinecraftVersion().isAtLeast(1, 20, 5)) {
-                // 1.20.5 后 数据组件格式
-                componentPart = "{minecraft:profile:{id:[I;0,0,0,0],properties:[{name:\"textures\",value:\"" + base64Value + "\"}]}}";
-            } else {
-                // 旧版本 NBT 格式
-                componentPart = "{SkullOwner:{Id:\"[I;0,0,0,0]\",Properties:{textures:[{Value:\"" + base64Value + "\"}]}}}";
-            }
-            BlockState headState = BlockState.get(blockStateStr + componentPart);
-            return headState;
+        	// 1.21.1 正确的 NBT 结构
+        	com.sk89q.jnbt.CompoundTag nbt = new com.sk89q.jnbt.CompoundTag(Map.of(
+                "profile", new com.sk89q.jnbt.CompoundTag(Map.of(
+                    "id", new IntArrayTag(new int[]{0, 0, 0, 0}), // UUID的整数数组
+                    "properties", new ListTag(com.sk89q.jnbt.CompoundTag.class, List.of(
+                        new com.sk89q.jnbt.CompoundTag(Map.of(
+                            "name", new StringTag("textures"),
+                            "value", new StringTag(base64Value)
+                        ))
+                    ))
+                ))
+            ));
+        	// 2. 获取基础方块状态（带旋转）
+            BlockState state = BlockState.get("minecraft:player_head[rotation=" + rotationIndex + "]");
+            
+            // 3. 创建带 NBT 的 BaseBlock
+            return new BaseBlock(state, nbt);
         });
     }
 
@@ -118,8 +124,14 @@ public class Schematic {
     }
     @Async
     public static void setRandomFacingHeadFromTexture(EditSession editSession, BlockVector3 pos, String texture) {
-    	int facing = ThreadLocalRandom.current().nextInt(16);
-    	BlockState headState = getCachedHead(textureToBase64(texture), facing);
+    	
+    	String base64Value = textureToBase64(texture);
+        // 检查 base64Value 是否有效
+        if (base64Value == null || base64Value.isEmpty()) {
+            return;
+        }
+        int rotationIndex = ThreadLocalRandom.current().nextInt(16);
+        BaseBlock headState = getCachedHead(base64Value, rotationIndex);
         editSession.setBlock(pos, headState);
    	
     }

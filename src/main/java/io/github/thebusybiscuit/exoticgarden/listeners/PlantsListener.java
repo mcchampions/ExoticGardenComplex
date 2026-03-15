@@ -81,7 +81,6 @@ public class PlantsListener implements Listener {
     }
     
     @EventHandler
-    @Async
     public void onWateringCanWater(PlayerInteractEvent e) {
         if (!ExoticGarden.instance.isFluffyEnabled()) {
             return;
@@ -108,7 +107,6 @@ public class PlantsListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOW)
-    @Async
     public void onGrow(StructureGrowEvent e) {
         if (PaperLib.isPaper()) {
             if (PaperLib.isChunkGenerated(e.getLocation())) {
@@ -253,12 +251,10 @@ public class PlantsListener implements Listener {
         return false;
     }
 
-    @Async
     private void growStructure(StructureGrowEvent e) {
         growStructure0(e);
     }
 
-    @Async
     private boolean growStructure0(StructureGrowEvent e) {
     	BlockDataController controller = Slimefun.getDatabaseManager().getBlockDataController();
         SlimefunItem item = StorageCacheUtils.getSfItem(e.getLocation());
@@ -322,7 +318,13 @@ public class PlantsListener implements Listener {
                         }
 
                         Slimefun.getDatabaseManager().getBlockDataController().removeBlock(e.getLocation());
-                        slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(e.getLocation(), berry.getID()));
+                        try {
+                        	slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(e.getLocation(), berry.getID()));
+                        }
+                        catch (IllegalStateException illegalStateException) {
+                            // ignore
+                        }
+                        
                         e.getWorld().playEffect(e.getLocation(), Effect.STEP_SOUND, Material.OAK_LEAVES);
                         break;
                     }
@@ -374,7 +376,12 @@ public class PlantsListener implements Listener {
                 Block current = e.getWorld().getBlockAt(x, y, z);
                 BlockVector3 pos = BlockVector3.at(x, y, z);
                 if (current.getType() != Material.WATER && !current.getType().isSolid() && berry.isSoil(current.getRelative(BlockFace.DOWN).getType())) {
-                    slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(current.getLocation(), berry.getID()));
+                	try {
+                		slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(current.getLocation(), berry.getID()));
+                	} catch (IllegalStateException illegalStateException) {
+                        // ignore
+                    }
+                	
                     switch (berry.getType()) {
                         case BUSH:
                             if (isPaper) {
@@ -463,7 +470,6 @@ public class PlantsListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    @Async
     public void onDecay(LeavesDecayEvent e) {
         if (!Slimefun.getWorldSettingsService().isWorldEnabled(e.getBlock().getWorld())) {
             return;
@@ -505,7 +511,6 @@ public class PlantsListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    @Async
     public void onBlockBurn(BlockBurnEvent e) {
         if (!Slimefun.getWorldSettingsService().isWorldEnabled(e.getBlock().getWorld())) {
             return;
@@ -617,7 +622,6 @@ public class PlantsListener implements Listener {
         return blocksToRemove;
     }
 
-    @Async
     private void dropFruitFromTree(Block block) {
     	try (EditSession fastSession = WorldEdit.getInstance().newEditSessionBuilder()
     			.world(BukkitAdapter.adapt(block.getLocation().getWorld()))
@@ -665,7 +669,6 @@ public class PlantsListener implements Listener {
         
     }
 
-    @Async
     private void waterStructure(Location l, PlayerInteractEvent e, ItemStack wateringCan) {
     	BlockDataController controller = Slimefun.getDatabaseManager().getBlockDataController();
     	
