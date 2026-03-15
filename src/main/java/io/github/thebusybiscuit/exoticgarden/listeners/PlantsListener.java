@@ -260,6 +260,7 @@ public class PlantsListener implements Listener {
         SlimefunItem item = StorageCacheUtils.getSfItem(e.getLocation());
         
 
+        boolean re = true;
         try (EditSession fastSession = WorldEdit.getInstance().newEditSessionBuilder()
         		.world(BukkitAdapter.adapt(e.getWorld()))
                 .allowedRegionsEverywhere() // 允许任何区域
@@ -302,7 +303,8 @@ public class PlantsListener implements Listener {
                                         case AIR, CAVE_AIR, SNOW:
                                             break;
                                         default:
-                                            return false;
+                                        	re = false;
+                                        	break;
                                     }
                                 }
                                 slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(blockAbove.getLocation(), berry.getID()));
@@ -330,7 +332,7 @@ public class PlantsListener implements Listener {
                     }
                 }
 
-                return true;
+                return re;
             }
         	fastSession.flushQueue();
             particleSession.flushQueue();
@@ -721,7 +723,7 @@ public class PlantsListener implements Listener {
                                             case SNOW:
                                                 break;
                                             default:
-                                                return;
+                                            	break;
                                         }
                                     }
 

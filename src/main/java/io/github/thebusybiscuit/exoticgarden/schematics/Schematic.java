@@ -3,10 +3,10 @@ package io.github.thebusybiscuit.exoticgarden.schematics;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -16,7 +16,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -30,6 +29,7 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockState;
+import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.xzavier0722.mc.plugin.slimefun4.storage.controller.BlockDataController;
 
@@ -96,18 +96,30 @@ public class Schematic {
         
         // 1. 创建 NBT 数据
         return threadSafeHeadCache.computeIfAbsent(cacheKey, k -> {
-        	// 1.21.1 正确的 NBT 结构
-        	com.sk89q.jnbt.CompoundTag nbt = new com.sk89q.jnbt.CompoundTag(Map.of(
+        	// 1. 构建纹理的完整URL
+           
+
+            // 4. 构建1.21.1所需的完整NBT结构
+            //    根标签是 "profile"，包含 id (UUID数组) 和 properties (纹理列表)
+            com.sk89q.jnbt.CompoundTag nbt = new com.sk89q.jnbt.CompoundTag(Map.of(
                 "profile", new com.sk89q.jnbt.CompoundTag(Map.of(
-                    "id", new IntArrayTag(new int[]{0, 0, 0, 0}), // UUID的整数数组
+                    // 生成一个随机UUID，使用IntArrayTag表示
+                    "id", new IntArrayTag(new int[]{
+                        UUID.randomUUID().hashCode(),
+                        UUID.randomUUID().hashCode(),
+                        UUID.randomUUID().hashCode(),
+                        UUID.randomUUID().hashCode()
+                    }),
                     "properties", new ListTag(com.sk89q.jnbt.CompoundTag.class, List.of(
                         new com.sk89q.jnbt.CompoundTag(Map.of(
                             "name", new StringTag("textures"),
                             "value", new StringTag(base64Value)
+                            // 注意：1.21.1中通常不需要 signature，除非你处理的是正版玩家的签名数据
                         ))
                     ))
                 ))
             ));
+        	
         	// 2. 获取基础方块状态（带旋转）
             BlockState state = BlockState.get("minecraft:player_head[rotation=" + rotationIndex + "]");
             
@@ -118,18 +130,22 @@ public class Schematic {
 
 	@Async
     public static String textureToBase64(String texture) {
-    	 String json = "{\"textures\":{\"SKIN\":{\"url\":\"http://textures.minecraft.net/texture/" + texture + "}}}";
-         String base64 = Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
-         return base64;
+		 String textureUrl = "http://textures.minecraft.net/texture/" + texture;
+
+         // 2. 构建描述纹理的JSON对象
+         String textureJson = String.format(
+             "{\"textures\":{\"SKIN\":{\"url\":\"%s\"}}}",
+             textureUrl
+         );
+
+         // 3. 对JSON进行Base64编码，得到Value字段
+         String base64Value = Base64.getEncoder().encodeToString(textureJson.getBytes());
+         return base64Value;
     }
     @Async
     public static void setRandomFacingHeadFromTexture(EditSession editSession, BlockVector3 pos, String texture) {
     	
     	String base64Value = textureToBase64(texture);
-        // 检查 base64Value 是否有效
-        if (base64Value == null || base64Value.isEmpty()) {
-            return;
-        }
         int rotationIndex = ThreadLocalRandom.current().nextInt(16);
         BaseBlock headState = getCachedHead(base64Value, rotationIndex);
         editSession.setBlock(pos, headState);
@@ -138,6 +154,59 @@ public class Schematic {
     @Async
     public static void pasteSchematic(Location loc, Tree tree, boolean doPhysics) {
         pasteSchematic(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), tree, doPhysics);
+    }
+    
+    /**
+     * 将 FAWE 的 BlockType 转换为 Bukkit 的 Material
+     * @param faweBlockType FAWE 的方块类型对象
+     * @return 对应的 Bukkit Material，如果找不到则返回 null
+     */
+    @Async
+    public static Material toBukkitMaterial(BlockType faweBlockType) {
+        if (faweBlockType == null) {
+            return null;
+        }
+
+        // 1. 从 BlockType 获取其 Minecraft 命名空间的 ID (例如 "minecraft:stone")
+        String minecraftId = faweBlockType.getId();
+
+        // 2. 去除命名空间前缀 "minecraft:"，得到纯名称 (例如 "stone")
+        // 注意: 如果方块来自其他模组，命名空间可能不同，需要根据实际情况处理
+        String materialName = minecraftId;
+        if (minecraftId.startsWith("minecraft:")) {
+            materialName = minecraftId.substring("minecraft:".length());
+        }
+
+        // 3. 使用 Bukkit 的 Material.getMaterial() 通过名称获取
+        // 警告: Material.getMaterial(String) 是大小写敏感的，且需要是 Bukkit 标准名称（全大写）
+        // 因此需要将 "stone" 转换为 "STONE"
+        Material bukkitMaterial = Material.getMaterial(materialName.toUpperCase());
+
+        // 或者，如果你有 BlockState，可以使用 BukkitAdapter.adapt()
+        // Material bukkitMaterial = BukkitAdapter.adapt(faweBlockState).getType();
+
+        return bukkitMaterial;
+    }
+    
+    /**
+     * 将 Bukkit Material 转换为 FAWE BlockType
+     * @param bukkitMaterial Bukkit 的 Material（例如 Material.STONE）
+     * @return 对应的 FAWE BlockType，如果转换失败则返回 null
+     */
+    @Async
+    public static BlockType toBlockType(Material bukkitMaterial) {
+        if (bukkitMaterial == null || !bukkitMaterial.isBlock()) {
+            return null; // 只有方块才能转换
+        }
+
+     // 获取 Bukkit Material 的名称（例如 "STONE"）
+        String materialName = bukkitMaterial.name();
+        
+        // 转换为小写的 Minecraft ID 格式（例如 "stone"）
+        String minecraftId = "minecraft:" + materialName.toLowerCase();
+        
+        // 使用 BlockTypes 解析
+        return BlockTypes.get(minecraftId);
     }
     
     @Async
@@ -179,19 +248,18 @@ public class Schematic {
                             int blockX = x + processedX;
                             int blockY = y + y1;
                             int blockZ = z + processedZ;
-                            Block block = world.getBlockAt(blockX, blockY, blockZ);
-                            Material blockType = block.getType();
-                            
+                            Location loc = new Location(world, blockX, blockY, blockZ);
                             BlockVector3 pos = BlockVector3.at(blockX, blockY, blockZ);
-                            BlockState blockState = BlockTypes.parse(blockType.name()).getDefaultState();
+                            BlockState blockState = editSession.getBlock(pos);
 
-                            if (blockType.isAir() || org.bukkit.Tag.SAPLINGS.isTagged(blockType) || (!blockType.isSolid() && !blockType.isInteractable() && !SlimefunTag.UNBREAKABLE_MATERIALS.isTagged(blockType))) {
+                            Material bukkitMaterial = toBukkitMaterial(blockState.getBlockType());
+                            if (blockState.isAir() || org.bukkit.Tag.SAPLINGS.isTagged(bukkitMaterial) || (!bukkitMaterial.isSolid() && !bukkitMaterial.isInteractable() && !SlimefunTag.UNBREAKABLE_MATERIALS.isTagged(bukkitMaterial))) {
                                 Material material = parseId(blocks[index], blockData[index]);
 
                                 
                                 	if (material != null) {
                                         if (blocks[index] != 0) {
-                                        	editSession.setBlock(pos, blockState);
+                                        	editSession.setBlock(pos, toBlockType(material));
                                             //block.setType(material, doPhysics);
                                         }
 
@@ -204,7 +272,7 @@ public class Schematic {
                                              * Fix: There already a block in this location.
                                              */
                                             try {
-                                                slimefunItemOptional.ifPresent(slimefunItem -> blockDataController.createBlock(block.getLocation(), slimefunItem.getId()));
+                                                slimefunItemOptional.ifPresent(slimefunItem -> blockDataController.createBlock(loc, slimefunItem.getId()));
                                             } catch (IllegalStateException illegalStateException) {
                                                 // ignore
                                             }
@@ -214,7 +282,7 @@ public class Schematic {
                                             Optional<SlimefunItem> slimefunItemOptional =
                                                     Optional.ofNullable(SlimefunItem.getByItem(tree.getFruit()));
 
-                                            slimefunItemOptional.ifPresent(slimefunItem -> blockDataController.createBlock(block.getLocation(), slimefunItem.getId()));
+                                            slimefunItemOptional.ifPresent(slimefunItem -> blockDataController.createBlock(loc, slimefunItem.getId()));
                                         }
                                     }
                                 	
