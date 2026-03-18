@@ -221,7 +221,6 @@ public class Schematic {
                 return;
             }
 
-            com.sk89q.worldedit.world.World faweworld = BukkitAdapter.adapt(world);
             BlockDataController blockDataController = Slimefun.getDatabaseManager().getBlockDataController();
             try (EditSession editSession = WorldEdit.getInstance().newEditSessionBuilder()
             		.world(BukkitAdapter.adapt(world))
