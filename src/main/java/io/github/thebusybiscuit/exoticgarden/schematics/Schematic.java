@@ -224,9 +224,11 @@ public class Schematic {
             com.sk89q.worldedit.world.World faweworld = BukkitAdapter.adapt(world);
             BlockDataController blockDataController = Slimefun.getDatabaseManager().getBlockDataController();
             try (EditSession editSession = WorldEdit.getInstance().newEditSessionBuilder()
-        			.world(faweworld)
-                    .maxBlocks(-1)
-                    .fastMode(true)
+            		.world(BukkitAdapter.adapt(world))
+                    .allowedRegionsEverywhere() // 允许任何区域
+                    .limitUnlimited() // 解除限制
+                    .changeSetNull() // 不记录变化
+                    .fastMode(true) // 禁用快速模式（true = 无物理/粒子，false = 有物理/粒子）
                     .build()) {
                 
             	short[] blocks = schematic.getBlocks();
