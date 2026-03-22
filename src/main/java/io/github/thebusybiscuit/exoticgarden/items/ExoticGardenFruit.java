@@ -1,20 +1,22 @@
 package io.github.thebusybiscuit.exoticgarden.items;
 
-import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack;
-import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
-import io.github.thebusybiscuit.slimefun4.core.handlers.ItemUseHandler;
-import io.github.thebusybiscuit.slimefun4.implementation.items.SimpleSlimefunItem;
-import io.github.thebusybiscuit.slimefun4.libraries.dough.items.ItemUtils;
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import javax.annotation.Nonnull;
-import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.Optional;
+import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
+import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack;
+import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
+import io.github.thebusybiscuit.slimefun4.core.handlers.ItemUseHandler;
+import io.github.thebusybiscuit.slimefun4.implementation.items.SimpleSlimefunItem;
+import io.github.thebusybiscuit.slimefun4.libraries.dough.items.ItemUtils;
 
 public class ExoticGardenFruit extends SimpleSlimefunItem<ItemUseHandler> {
 
@@ -85,10 +87,10 @@ public class ExoticGardenFruit extends SimpleSlimefunItem<ItemUseHandler> {
                  HOPPER,
                  ENDER_CHEST,
                  BARREL -> true;
-            default -> material.name().equals("BARREL") ||
-                    material.name().endsWith("_SHULKER_BOX") ||
-                    material.name().endsWith("DOOR") ||
-                    material.name().endsWith("BED");
+            default -> "BARREL".equals(material.name()) ||
+                       material.name().endsWith("_SHULKER_BOX") ||
+                       material.name().endsWith("DOOR") ||
+                       material.name().endsWith("BED");
         };
     }
 

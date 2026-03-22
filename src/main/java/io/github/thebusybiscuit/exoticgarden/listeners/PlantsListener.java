@@ -9,7 +9,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -22,7 +21,6 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
-import org.bukkit.block.data.Rotatable;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -41,6 +39,12 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.world.block.BlockTypes;
+import com.xzavier0722.mc.plugin.slimefun4.storage.controller.BlockDataController;
 import com.xzavier0722.mc.plugin.slimefun4.storage.util.StorageCacheUtils;
 
 import io.github.thebusybiscuit.exoticgarden.Berry;
@@ -54,8 +58,6 @@ import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.config.Config;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.protection.Interaction;
-import io.github.thebusybiscuit.slimefun4.libraries.dough.skins.PlayerHead;
-import io.github.thebusybiscuit.slimefun4.libraries.dough.skins.PlayerSkin;
 import io.github.thebusybiscuit.slimefun4.libraries.paperlib.PaperLib;
 import io.github.thebusybiscuit.slimefun4.utils.tags.SlimefunTag;
 import io.ncbpfluffybear.fluffymachines.utils.FluffyItems;
@@ -67,39 +69,11 @@ public class PlantsListener implements Listener {
     private static final SlimefunTag[] valuesCache = SlimefunTag.values();
     private final Config cfg;
     private final ExoticGarden plugin;
-    private final BlockFace[] faces = {BlockFace.NORTH, BlockFace.NORTH_EAST, BlockFace.EAST, BlockFace.SOUTH_EAST, BlockFace.SOUTH, BlockFace.SOUTH_WEST, BlockFace.WEST, BlockFace.NORTH_WEST};
-	private static final Map<String, PlayerSkin> skinCache = new HashMap<>();
 
     public PlantsListener(ExoticGarden plugin) {
         this.plugin = plugin;
         cfg = plugin.getCfg();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-    }
-
-    public static void optimizedSetSkin(Block block, String skinHashCode, Boolean sendBlockUpdate) {
-        if (!skinCache.isEmpty() && skinCache.containsKey(skinHashCode)) {
-        	Bukkit.getScheduler().runTask(ExoticGarden.getInstance(), () -> PlayerHead.setSkin(block, skinCache.get(skinHashCode), sendBlockUpdate));
-            
-            return;
-        }
-
-        Bukkit.getScheduler().runTaskAsynchronously(ExoticGarden.getInstance(), () -> {
-        	try {
-        		PlayerSkin skin = PlayerSkin.fromHashCode(skinHashCode);
-                skinCache.put(skinHashCode, skin);
-                Bukkit.getScheduler().runTask(ExoticGarden.getInstance(), () -> PlayerHead.setSkin(block, skin, sendBlockUpdate));
-        	} catch (Exception e) {
-            	e.printStackTrace();
-                // 异常时使用默认皮肤
-            	/*
-                Bukkit.getScheduler().runTask(RykenSlimefunCustomizer.INSTANCE, () -> 
-                    PlayerHead.setSkin(block, PlayerSkin.getDefaultSkin(), false)
-                );
-                */
-            }
-                
-                    
-        });
     }
     
     @EventHandler
@@ -145,6 +119,7 @@ public class PlantsListener implements Listener {
     }
 
     @EventHandler
+    
     public void onGenerate(ChunkPopulateEvent e) {
         if (!cfg.getOrSetDefault("options.auto-generate-plants", true)) {
             return;
@@ -163,7 +138,7 @@ public class PlantsListener implements Listener {
 
             if (random.nextInt(100) < cfg.getInt("chances.BUSH")) {
                 Berry berry = ExoticGarden.getBerries().get(random.nextInt(ExoticGarden.getBerries().size()));
-                if (berry.getType().equals(PlantType.ORE_PLANT)) return;
+                if (berry.getType() == PlantType.ORE_PLANT) return;
 
                 int chunkX = e.getChunk().getX();
                 int chunkZ = e.getChunk().getZ();
@@ -217,11 +192,14 @@ public class PlantsListener implements Listener {
         }
     }
 
-    private int getWorldBorder(World world) {
+    
+    
+    protected int getWorldBorder(World world) {
         return (int) world.getWorldBorder().getSize();
     }
 
     @EventHandler
+    
     public void onFastGenerate(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
         if (block == null) {
@@ -237,7 +215,8 @@ public class PlantsListener implements Listener {
         applyGoldKela(event, block, hand);
     }
 
-    private boolean applyGoldKela(PlayerInteractEvent event, Block block, ItemStack hand) {
+    
+    protected boolean applyGoldKela(PlayerInteractEvent event, Block block, ItemStack hand) {
         if (!(StorageCacheUtils.getSfItem(block.getLocation()) instanceof BonemealableItem bi)) {
             return false;
         }
@@ -269,78 +248,93 @@ public class PlantsListener implements Listener {
     }
 
     private boolean growStructure0(StructureGrowEvent e) {
+    	BlockDataController controller = Slimefun.getDatabaseManager().getBlockDataController();
         SlimefunItem item = StorageCacheUtils.getSfItem(e.getLocation());
+        
 
-        if (item != null) {
-            e.setCancelled(true);
-            for (Tree tree : ExoticGarden.getTrees()) {
-                if (item.getId().equalsIgnoreCase(tree.getSapling())) {
-                    Slimefun.getDatabaseManager().getBlockDataController().removeBlock(e.getLocation());
-                    Schematic.pasteSchematic(e.getLocation(), tree, false);
-                    return true;
-                }
-            }
-
-            for (Berry berry : ExoticGarden.getBerries()) {
-                if (item.getId().equalsIgnoreCase(berry.toBush())) {
-                    switch (berry.getType()) {
-                        case BUSH -> e.getLocation().getBlock().setType(Material.OAK_LEAVES, false);
-                        case ORE_PLANT, DOUBLE_PLANT -> {
-                            Block blockAbove = e.getLocation().getBlock().getRelative(BlockFace.UP);
-                            item = StorageCacheUtils.getSfItem(blockAbove.getLocation());
-                            if (item != null) return false;
-                            if (!Tag.SAPLINGS.isTagged(blockAbove.getType()) && !Tag.LEAVES.isTagged(blockAbove.getType())) {
-                                switch (blockAbove.getType()) {
-                                    case AIR, CAVE_AIR, SNOW:
-                                        break;
-                                    default:
-                                        return false;
-                                }
-                            }
-                            BlockStorage.store(blockAbove, berry.getItem());
-                            e.getLocation().getBlock().setType(Material.OAK_LEAVES, false);
-                            Bukkit.getScheduler().runTask(plugin, () -> {
-                            	blockAbove.setType(Material.PLAYER_HEAD, false);
-                                Rotatable rotatable = (Rotatable) blockAbove.getBlockData();
-                                rotatable.setRotation(faces[ThreadLocalRandom.current().nextInt(faces.length)]);
-                                blockAbove.setBlockData(rotatable, false);
-                                if (blockAbove.getType() == Material.PLAYER_HEAD) {
-                                	optimizedSetSkin(blockAbove, berry.getTexture(), true);
-                                }
-                                
-                            	
-                            });
-                            
-                        }
-                        default -> {
-                        	Bukkit.getScheduler().runTask(plugin, () -> {
-                        		e.getLocation().getBlock().setType(Material.PLAYER_HEAD, false);
-                                Rotatable s = (Rotatable) e.getLocation().getBlock().getBlockData();
-                                s.setRotation(faces[ThreadLocalRandom.current().nextInt(faces.length)]);
-                                e.getLocation().getBlock().setBlockData(s);
-                                if (e.getLocation().getBlock().getType() == Material.PLAYER_HEAD) {
-                                	optimizedSetSkin(e.getLocation().getBlock(), berry.getTexture(), true);
-                                }
-                        	});
-                            
-                            
-                        }
+        boolean re = true;
+        try (EditSession fastSession = WorldEdit.getInstance().newEditSessionBuilder()
+        		.world(BukkitAdapter.adapt(e.getWorld()))
+                .allowedRegionsEverywhere() // 允许任何区域
+                .limitUnlimited() // 解除限制
+                .changeSetNull() // 不记录变化
+                .fastMode(true) // 禁用快速模式（true = 无物理/粒子，false = 有物理/粒子）
+                .build();
+        	EditSession particleSession = WorldEdit.getInstance().newEditSessionBuilder()
+        		.world(BukkitAdapter.adapt(e.getWorld()))
+                .allowedRegionsEverywhere() // 允许任何区域
+                .limitUnlimited() // 解除限制
+                .changeSetNull() // 不记录变化
+                .fastMode(false) // 禁用快速模式（true = 无物理/粒子，false = 有物理/粒子）
+                .build()) {
+        	BlockVector3 pos = BlockVector3.at(e.getLocation().getBlockX(), e.getLocation().getBlockY(), e.getLocation().getBlockZ());
+        	Block blockAbove = e.getLocation().getBlock().getRelative(BlockFace.UP);
+        	BlockVector3 posAbove = BlockVector3.at(blockAbove.getLocation().getBlockX(), blockAbove.getLocation().getBlockY(), blockAbove.getLocation().getBlockZ());
+        	if (item != null) {
+                e.setCancelled(true);
+                for (Tree tree : ExoticGarden.getTrees()) {
+                    if (item.getId().equalsIgnoreCase(tree.getSapling())) {
+                    	controller.removeBlock(e.getLocation());
+                        Schematic.pasteSchematic(e.getLocation(), tree, false);
+                        return true;
                     }
-
-                    Slimefun.getDatabaseManager().getBlockDataController().removeBlock(e.getLocation());
-                    BlockStorage.store(e.getLocation().getBlock(), berry.getItem());
-                    e.getWorld().playEffect(e.getLocation(), Effect.STEP_SOUND, Material.OAK_LEAVES);
-                    break;
                 }
-            }
 
-            return true;
+                for (Berry berry : ExoticGarden.getBerries()) {
+                	Optional<SlimefunItem> slimefunItemOptional = Optional.ofNullable(SlimefunItem.getByItem(berry.getItem()));
+                    if (item.getId().equalsIgnoreCase(berry.toBush())) {
+                        switch (berry.getType()) {
+                            case BUSH -> fastSession.setBlock(pos, BlockTypes.OAK_LEAVES.getDefaultState());
+                            case ORE_PLANT, DOUBLE_PLANT -> {
+                                
+                                
+                                item = StorageCacheUtils.getSfItem(blockAbove.getLocation());
+                                if (item != null) return false;
+                                if (!Tag.SAPLINGS.isTagged(blockAbove.getType()) && !Tag.LEAVES.isTagged(blockAbove.getType())) {
+                                    switch (blockAbove.getType()) {
+                                        case AIR, CAVE_AIR, SNOW:
+                                            break;
+                                        default:
+                                        	re = false;
+                                        	break;
+                                    }
+                                }
+                                slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(blockAbove.getLocation(), berry.getID()));
+                                fastSession.setBlock(pos, BlockTypes.OAK_LEAVES.getDefaultState());                                
+                                Schematic.setRandomFacingHeadFromTexture(particleSession, posAbove, berry.getTexture());
+                                
+                            }
+                            default -> Schematic.setRandomFacingHeadFromTexture(particleSession, pos, berry.getTexture());
+                        }
+
+                        Slimefun.getDatabaseManager().getBlockDataController().removeBlock(e.getLocation());
+                        try {
+                        	slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(e.getLocation(), berry.getID()));
+                        }
+                        catch (IllegalStateException illegalStateException) {
+                            // ignore
+                        }
+                        
+                        e.getWorld().playEffect(e.getLocation(), Effect.STEP_SOUND, Material.OAK_LEAVES);
+                        break;
+                    }
+                }
+
+                return re;
+            }
+        	fastSession.flushQueue();
+            particleSession.flushQueue();
+        } catch (Exception error) {
+        	error.printStackTrace();
         }
+        
+        
 
         return false;
     }
 
-    private void pasteTree(ChunkPopulateEvent e, int x, int z, Tree tree) {
+    
+    protected void pasteTree(ChunkPopulateEvent e, int x, int z, Tree tree) {
         for (int y = e.getWorld().getHighestBlockYAt(x, z) + 2; y > 30; y--) {
             Block current = e.getWorld().getBlockAt(x, y, z);
             if (current.getType() != Material.WATER && current.getType() != Material.SEAGRASS && current.getType() != Material.TALL_SEAGRASS && !current.getType().isSolid() && !(current.getBlockData() instanceof Waterlogged && ((Waterlogged) current.getBlockData()).isWaterlogged()) && tree.isSoil(current.getRelative(0, -1, 0).getType()) && isFlat(current)) {
@@ -351,40 +345,59 @@ public class PlantsListener implements Listener {
     }
 
     
-    private void growBush(ChunkPopulateEvent e, int x, int z, Berry berry, Random random, boolean isPaper) {
-        for (int y = e.getWorld().getHighestBlockYAt(x, z) + 2; y > 30; y--) {
-            Block current = e.getWorld().getBlockAt(x, y, z);
-            if (current.getType() != Material.WATER && !current.getType().isSolid() && Berry.isSoil(current.getRelative(BlockFace.DOWN).getType())) {
-                BlockStorage.store(current, berry.getItem());
-                switch (berry.getType()) {
-                    case BUSH:
-                        if (isPaper) {
-                            current.setType(Material.OAK_LEAVES, false);
-                        } else {
-                            plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> current.setType(Material.OAK_LEAVES));
-                        }
-                        break;
-                    case FRUIT, ORE_PLANT, DOUBLE_PLANT:
-                        plugin.getServer().getScheduler().runTask(plugin, () -> {
-                            current.setType(Material.PLAYER_HEAD, false);
-                            Rotatable s = (Rotatable) current.getBlockData();
-                            s.setRotation(faces[random.nextInt(faces.length)]);
-                            current.setBlockData(s, false);
-                            if (current.getType() == Material.PLAYER_HEAD) {
-                            	optimizedSetSkin(current, berry.getTexture(), true);
+    protected void growBush(ChunkPopulateEvent e, int x, int z, Berry berry, Random random, boolean isPaper) {
+    	BlockDataController controller = Slimefun.getDatabaseManager().getBlockDataController();
+    	Optional<SlimefunItem> slimefunItemOptional = Optional.ofNullable(SlimefunItem.getByItem(berry.getItem()));
+    	try (EditSession fastSession = WorldEdit.getInstance().newEditSessionBuilder()
+    			.world(BukkitAdapter.adapt(e.getWorld()))
+                .allowedRegionsEverywhere() // 允许任何区域
+                .limitUnlimited() // 解除限制
+                .changeSetNull() // 不记录变化
+                .fastMode(true) // 禁用快速模式（true = 无物理/粒子，false = 有物理/粒子）
+                .build();
+        	EditSession particleSession = WorldEdit.getInstance().newEditSessionBuilder()
+        		.world(BukkitAdapter.adapt(e.getWorld()))
+                .allowedRegionsEverywhere() // 允许任何区域
+                .limitUnlimited() // 解除限制
+                .changeSetNull() // 不记录变化
+                .fastMode(false) // 禁用快速模式（true = 无物理/粒子，false = 有物理/粒子）
+                .build()) {
+    		for (int y = e.getWorld().getHighestBlockYAt(x, z) + 2; y > 30; y--) {
+                Block current = e.getWorld().getBlockAt(x, y, z);
+                BlockVector3 pos = BlockVector3.at(x, y, z);
+                if (current.getType() != Material.WATER && !current.getType().isSolid() && berry.isSoil(current.getRelative(BlockFace.DOWN).getType())) {
+                	try {
+                		slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(current.getLocation(), berry.getID()));
+                	} catch (IllegalStateException illegalStateException) {
+                        // ignore
+                    }
+                	
+                    switch (berry.getType()) {
+                        case BUSH:
+                            if (isPaper) {
+                            	fastSession.setBlock(pos, BlockTypes.OAK_LEAVES.getDefaultState());
+                            } else {
+                                plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> fastSession.setBlock(pos, BlockTypes.OAK_LEAVES.getDefaultState()));
                             }
-                            
-                        });
-                        break;
-                    default:
-                        break;
+                            break;
+                        case FRUIT, ORE_PLANT, DOUBLE_PLANT:
+                        	Schematic.setRandomFacingHeadFromTexture(particleSession, pos, berry.getTexture());
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
                 }
-                break;
             }
+    		fastSession.flushQueue();
+            particleSession.flushQueue();
+    	} catch (Exception error) {
+        	error.printStackTrace();
         }
     }
 
-    private boolean isFlat(Block current) {
+    
+    protected boolean isFlat(Block current) {
         for (int i = -2; i < 2; i++) {
             for (int j = -2; j < 2; j++) {
                 for (int k = 0; k < 6; k++) {
@@ -402,6 +415,7 @@ public class PlantsListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    
     public void onHarvest(BlockBreakEvent e) {
         if (Slimefun.getProtectionManager().hasPermission(e.getPlayer(), e.getBlock().getLocation(), Interaction.BREAK_BLOCK)) {
             if (e.getBlock().getType() == Material.PLAYER_HEAD || Tag.LEAVES.isTagged(e.getBlock().getType())) {
@@ -463,8 +477,22 @@ public class PlantsListener implements Listener {
 
         if (drop != null) {
             e.setCancelled(true);
-            e.getBlock().setType(Material.AIR, false);
-            e.getBlock().getWorld().dropItemNaturally(e.getBlock().getLocation(), drop);
+            Location l = e.getBlock().getLocation();
+            try (EditSession fastSession = WorldEdit.getInstance().newEditSessionBuilder()
+            		.world(BukkitAdapter.adapt(l.getWorld()))
+                    .allowedRegionsEverywhere() // 允许任何区域
+                    .limitUnlimited() // 解除限制
+                    .changeSetNull() // 不记录变化
+                    .fastMode(true) // 禁用快速模式（true = 无物理/粒子，false = 有物理/粒子）
+                    .build()) {
+            	
+            	BlockVector3 pos = BlockVector3.at(l.getBlockX(), l.getBlockY(), l.getBlockZ());
+            	fastSession.setBlock(pos, BlockTypes.AIR.getDefaultState());
+            	fastSession.flushQueue();
+        	} catch (Exception error) {
+            	error.printStackTrace();
+            }
+            e.getBlock().getWorld().dropItemNaturally(l, drop);
         }
     }
 
@@ -491,12 +519,27 @@ public class PlantsListener implements Listener {
 
         if (item != null) {
             e.setCancelled(true);
-            e.getBlock().setType(Material.AIR, false);
+            Location l = e.getBlock().getLocation();
+            try (EditSession fastSession = WorldEdit.getInstance().newEditSessionBuilder()
+            		.world(BukkitAdapter.adapt(l.getWorld()))
+            		.allowedRegionsEverywhere() // 允许任何区域
+                    .limitUnlimited() // 解除限制
+                    .changeSetNull() // 不记录变化
+                    .fastMode(true) // 禁用快速模式（true = 无物理/粒子，false = 有物理/粒子）
+                    .build()) {
+            	
+            	BlockVector3 pos = BlockVector3.at(l.getBlockX(), l.getBlockY(), l.getBlockZ());
+            	fastSession.setBlock(pos, BlockTypes.AIR.getDefaultState());
+            	fastSession.flushQueue();
+        	} catch (Exception error) {
+            	error.printStackTrace();
+            }
             e.getBlock().getWorld().dropItemNaturally(e.getBlock().getLocation(), item);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    
     public void onInteract(PlayerInteractEvent e) {
         Material mainHand = e.getPlayer().getInventory().getItemInMainHand().getType();
         Material offHand = e.getPlayer().getInventory().getItemInOffHand().getType();
@@ -523,16 +566,19 @@ public class PlantsListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    
     public void onBlockExplode(BlockExplodeEvent e) {
         e.blockList().removeAll(getAffectedBlocks(e.blockList()));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    
     public void onEntityExplode(EntityExplodeEvent e) {
         e.blockList().removeAll(getAffectedBlocks(e.blockList()));
     }
 
     @EventHandler(ignoreCancelled = true)
+    
     public void onBonemealPlant(BlockFertilizeEvent e) {
         Block b = e.getBlock();
         if (b.getType() == Material.OAK_SAPLING) {
@@ -546,6 +592,7 @@ public class PlantsListener implements Listener {
         }
     }
 
+    
     private Set<Block> getAffectedBlocks(List<Block> blockList) {
         Set<Block> blocksToRemove = new HashSet<>();
 
@@ -562,109 +609,130 @@ public class PlantsListener implements Listener {
     }
 
     private void dropFruitFromTree(Block block) {
-        for (int x = -1; x < 2; x++) {
-            for (int y = -1; y < 2; y++) {
-                for (int z = -1; z < 2; z++) {
-                    // inspect a cube at the reference
-                    Block fruit = block.getRelative(x, y, z);
-                    if (fruit.isEmpty()) continue;
+    	try (EditSession fastSession = WorldEdit.getInstance().newEditSessionBuilder()
+    			.world(BukkitAdapter.adapt(block.getLocation().getWorld()))
+    			.allowedRegionsEverywhere() // 允许任何区域
+                .limitUnlimited() // 解除限制
+                .changeSetNull() // 不记录变化
+                .fastMode(true) // 禁用快速模式（true = 无物理/粒子，false = 有物理/粒子）
+                .build()) {
+    		
+    		for (int x = -1; x < 2; x++) {
+                for (int y = -1; y < 2; y++) {
+                    for (int z = -1; z < 2; z++) {
+                        // inspect a cube at the reference
+                        Block fruit = block.getRelative(x, y, z);
+                        if (fruit.isEmpty()) continue;
 
 
-                    Location loc = fruit.getLocation();
-                    SlimefunItem check = StorageCacheUtils.getSfItem(loc);
-                    if (check == null) continue;
-                    for (Tree tree : ExoticGarden.getTrees()) {
-                        if (check.getId().equalsIgnoreCase(tree.getFruitID())) {
-                            Slimefun.getDatabaseManager().getBlockDataController().removeBlock(loc);
-                            ItemStack fruits = check.getItem();
-                            fruit.getWorld().playEffect(loc, Effect.STEP_SOUND, Material.OAK_LEAVES);
-                            fruit.getWorld().dropItemNaturally(loc, fruits);
-                            fruit.setType(Material.AIR, false);
+                        Location loc = fruit.getLocation();
+                        BlockVector3 pos = BlockVector3.at(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+                        SlimefunItem check = StorageCacheUtils.getSfItem(loc);
+                        if (check == null) continue;
+                        for (Tree tree : ExoticGarden.getTrees()) {
+                            if (check.getId().equalsIgnoreCase(tree.getFruitID())) {
+                                Slimefun.getDatabaseManager().getBlockDataController().removeBlock(loc);
+                                ItemStack fruits = check.getItem();
+                                fruit.getWorld().playEffect(loc, Effect.STEP_SOUND, Material.OAK_LEAVES);
+                            	fastSession.setBlock(pos, BlockTypes.AIR.getDefaultState());
+                                fruit.getWorld().dropItemNaturally(loc, fruits);
+                                
+                                	
+                                	
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+    		
+    		fastSession.flushQueue();
+    		
+    	} catch (Exception error) {
+        	error.printStackTrace();
+        }
+    		
+        
+    }
+
+    private void waterStructure(Location l, PlayerInteractEvent e, ItemStack wateringCan) {
+    	BlockDataController controller = Slimefun.getDatabaseManager().getBlockDataController();
+    	
+    	
+        SlimefunItem item = BlockStorage.check(l.getBlock());
+
+        try (EditSession fastSession = WorldEdit.getInstance().newEditSessionBuilder()
+        		.world(BukkitAdapter.adapt(l.getWorld()))
+        		.allowedRegionsEverywhere() // 允许任何区域
+                .limitUnlimited() // 解除限制
+                .changeSetNull() // 不记录变化
+                .fastMode(true) // 禁用快速模式（true = 无物理/粒子，false = 有物理/粒子）
+                .build()) {
+        	BlockVector3 pos = BlockVector3.at(l.getBlockX(), l.getBlockY(), l.getBlockZ());
+        	Block blockAbove = l.getBlock().getRelative(BlockFace.UP);
+        	BlockVector3 posAbove = BlockVector3.at(blockAbove.getLocation().getBlockX(), blockAbove.getLocation().getBlockY(), blockAbove.getLocation().getBlockZ());
+
+        	if (item != null) {
+                final double random = ThreadLocalRandom.current().nextDouble();
+                for (Tree tree : ExoticGarden.getTrees()) {
+                    if (item.getId().equalsIgnoreCase(tree.getSapling())) {
+                        l.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, l.add(0.5D, 0.5D, 0.5D), 15, 0.2F, 0.2F, 0.2F);
+                        if (cfg.getDouble("watering-can.chance") >= random) {
+                            BlockStorage.clearBlockInfo(l.getBlock());
+                            Schematic.pasteSchematic(l, tree, false);
+                            return;
+                        }
+                    }
+                }
+
+                for (Berry berry : ExoticGarden.getBerries()) {
+                	Optional<SlimefunItem> slimefunItemOptional = Optional.ofNullable(SlimefunItem.getByItem(berry.getItem()));
+                    if (item.getId().equalsIgnoreCase(berry.toBush())) {
+                        l.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, l.add(0.5D, 0.5D, 0.5D), 15, 0.2F, 0.2F, 0.2F);
+                        if (cfg.getDouble("watering-can.chance") >= random) {
+                            switch (berry.getType()) {
+                                case BUSH:
+                                	fastSession.setBlock(pos, BlockTypes.OAK_LEAVES.getDefaultState());
+                                    break;
+                                case ORE_PLANT:
+                                case DOUBLE_PLANT:
+                                    
+                                    item = BlockStorage.check(blockAbove);
+                                    if (item != null) return;
+
+                                    if (!Tag.SAPLINGS.isTagged(blockAbove.getType()) && !Tag.LEAVES.isTagged(blockAbove.getType())) {
+                                        switch (blockAbove.getType()) {
+                                            case AIR:
+                                            case CAVE_AIR:
+                                            case SNOW:
+                                            default:
+                                            	break;
+                                        }
+                                    }
+
+                                    slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(blockAbove.getLocation(), berry.getID()));
+                                    fastSession.setBlock(pos, BlockTypes.OAK_LEAVES.getDefaultState());
+                                    Schematic.setRandomFacingHeadFromTexture(fastSession, posAbove, berry.getTexture());
+                                    
+                                    
+                                    break;
+                                default:
+                                	Schematic.setRandomFacingHeadFromTexture(fastSession, pos, berry.getTexture());
+                                    break;
+                            }
+
+                            BlockStorage.deleteLocationInfoUnsafely(l, false);
+                            slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(l, berry.getID()));
+                            l.getWorld().playEffect(l, Effect.STEP_SOUND, Material.OAK_LEAVES);
                             break;
                         }
                     }
                 }
             }
+        	fastSession.flushQueue();
+    	} catch (Exception error) {
+        	error.printStackTrace();
         }
-    }
-
-    private void waterStructure(Location l, PlayerInteractEvent e, ItemStack wateringCan) {
-        SlimefunItem item = BlockStorage.check(l.getBlock());
-
-        if (item != null) {
-            final double random = ThreadLocalRandom.current().nextDouble();
-            for (Tree tree : ExoticGarden.getTrees()) {
-                if (item.getId().equalsIgnoreCase(tree.getSapling())) {
-                    l.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, l.add(0.5D, 0.5D, 0.5D), 15, 0.2F, 0.2F, 0.2F);
-                    if (cfg.getDouble("watering-can.chance") >= random) {
-                        BlockStorage.clearBlockInfo(l.getBlock());
-                        Schematic.pasteSchematic(l, tree, false);
-                        return;
-                    }
-                }
-            }
-
-            for (Berry berry : ExoticGarden.getBerries()) {
-                if (item.getId().equalsIgnoreCase(berry.toBush())) {
-                    l.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, l.add(0.5D, 0.5D, 0.5D), 15, 0.2F, 0.2F, 0.2F);
-                    if (cfg.getDouble("watering-can.chance") >= random) {
-                        switch (berry.getType()) {
-                            case BUSH:
-                                l.getBlock().setType(Material.OAK_LEAVES, false);
-                                break;
-                            case ORE_PLANT:
-                            case DOUBLE_PLANT:
-                                Block blockAbove = l.getBlock().getRelative(BlockFace.UP);
-                                item = BlockStorage.check(blockAbove);
-                                if (item != null) return;
-
-                                if (!Tag.SAPLINGS.isTagged(blockAbove.getType()) && !Tag.LEAVES.isTagged(blockAbove.getType())) {
-                                    switch (blockAbove.getType()) {
-                                        case AIR:
-                                        case CAVE_AIR:
-                                        case SNOW:
-                                            break;
-                                        default:
-                                            return;
-                                    }
-                                }
-
-                                BlockStorage.store(blockAbove, berry.getItem());
-                                l.getBlock().setType(Material.OAK_LEAVES, false);
-                                plugin.getServer().getScheduler().runTask(plugin, () -> {
-                                	blockAbove.setType(Material.PLAYER_HEAD, false);
-                                    Rotatable rotatable = (Rotatable) blockAbove.getBlockData();
-                                    rotatable.setRotation(faces[ThreadLocalRandom.current().nextInt(faces.length)]);
-                                    blockAbove.setBlockData(rotatable);
-                                    if (blockAbove.getType() == Material.PLAYER_HEAD) {
-                                    	optimizedSetSkin(blockAbove, berry.getTexture(), false);
-                                    }
-
-                                    
-                                });
-                                
-                                break;
-                            default:
-                            	plugin.getServer().getScheduler().runTask(plugin, () -> {
-                            		l.getBlock().setType(Material.PLAYER_HEAD, false);
-                                    Rotatable s = (Rotatable) l.getBlock().getBlockData();
-                                    s.setRotation(faces[ThreadLocalRandom.current().nextInt(faces.length)]);
-                                    l.getBlock().setBlockData(s);
-                                    if (l.getBlock().getType() == Material.PLAYER_HEAD) {
-                                    	optimizedSetSkin(l.getBlock(), berry.getTexture(), false);
-                                    }
-                            	});
-                                
-                                break;
-                        }
-
-                        BlockStorage.deleteLocationInfoUnsafely(l, false);
-                        BlockStorage.store(l.getBlock(), berry.getItem());
-                        l.getWorld().playEffect(l, Effect.STEP_SOUND, Material.OAK_LEAVES);
-                        break;
-                    }
-                }
-            }
-        }
+       
     }
 }

@@ -1,10 +1,11 @@
 package io.github.thebusybiscuit.exoticgarden;
 
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+
 import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 public class EGPlant extends HandledBlock {
     private static final int food = 2;

@@ -1,13 +1,15 @@
 package io.github.thebusybiscuit.exoticgarden;
 
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
+import java.util.EnumSet;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.EnumSet;
-import java.util.Set;
+
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+
+import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 
 public class Berry {
 

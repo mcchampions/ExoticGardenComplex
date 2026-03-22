@@ -1,10 +1,11 @@
 package io.github.thebusybiscuit.exoticgarden;
 
-import io.github.thebusybiscuit.slimefun4.utils.ChestMenuUtils;
-import me.mrCookieSlime.Slimefun.api.inventory.BlockMenu;
 import org.bukkit.ChatColor;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+
+import io.github.thebusybiscuit.slimefun4.utils.ChestMenuUtils;
+import me.mrCookieSlime.Slimefun.api.inventory.BlockMenu;
 
 public class MachineHelper {
     public static short getDurability(@NotNull ItemStack itemStack, int timeLeft, int totalTime) {

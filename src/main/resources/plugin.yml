@@ -10,12 +10,13 @@ authors:
 description: A Slimefun Addon that adds new Plants and dishes to the game
 website: https://github.com/balugaq/ExoticGardenComplex
 
-api-version: 1.18
+api-version: 1.21
 main: io.github.thebusybiscuit.exoticgarden.ExoticGarden
 
 depend:
   - Slimefun
   - GuizhanLibPlugin
+  - FastAsyncWorldEdit
 
 softdepend:
   - Sanity

@@ -73,7 +73,7 @@ public abstract class DefaultGUI extends SlimefunItem implements InventoryBlock,
 
 
             public int[] getSlotsAccessedByItemTransport(ItemTransportFlow flow) {
-                if (flow.equals(ItemTransportFlow.INSERT)) {
+                if (flow == ItemTransportFlow.INSERT) {
                     return DefaultGUI.this.getInputSlots();
                 }
                 return DefaultGUI.this.getOutputMainSlots();
@@ -152,7 +152,7 @@ public abstract class DefaultGUI extends SlimefunItem implements InventoryBlock,
 
 
             public int[] getSlotsAccessedByItemTransport(ItemTransportFlow flow) {
-                if (flow.equals(ItemTransportFlow.INSERT)) {
+                if (flow == ItemTransportFlow.INSERT) {
                     return DefaultGUI.this.getInputSlots();
                 }
                 return DefaultGUI.this.getOutputMainSlots();

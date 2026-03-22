@@ -73,7 +73,7 @@ public abstract class ThreeInputGUI extends SlimefunItem implements InventoryBlo
 
 
             public int[] getSlotsAccessedByItemTransport(ItemTransportFlow flow) {
-                if (flow.equals(ItemTransportFlow.INSERT)) {
+                if (flow == ItemTransportFlow.INSERT) {
                     return ThreeInputGUI.this.getInputSlots();
                 }
                 return ThreeInputGUI.this.getOutputMainSlots();
@@ -152,7 +152,7 @@ public abstract class ThreeInputGUI extends SlimefunItem implements InventoryBlo
 
 
             public int[] getSlotsAccessedByItemTransport(ItemTransportFlow flow) {
-                if (flow.equals(ItemTransportFlow.INSERT)) {
+                if (flow == ItemTransportFlow.INSERT) {
                     return ThreeInputGUI.this.getInputSlots();
                 }
                 return ThreeInputGUI.this.getOutputMainSlots();

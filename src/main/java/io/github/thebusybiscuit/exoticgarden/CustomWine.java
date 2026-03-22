@@ -15,7 +15,7 @@ public class CustomWine extends EGPlant implements NotPlaceable {
     final float food;
     final float sanity;
     final int alcohol;
-    PotionEffect[] effects = null;
+    PotionEffect[] effects;
 
     public CustomWine(ItemGroup category, ItemStack item, String name, RecipeType recipeType, ItemStack[] recipe, int food, float sanity, int alcohol, PotionEffect[] effects) {
         super(category, item, name, recipeType, true, recipe);

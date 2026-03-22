@@ -10,8 +10,8 @@ public class ExoticCommand implements CommandExecutor {
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] strings) {
         if (strings.length == 3) {
             if (hasPermission(commandSender, "exoticgarden.admin") &&
-                    strings[0].equalsIgnoreCase("alo") &&
-                    strings[1].equalsIgnoreCase("info")) {
+                "alo".equalsIgnoreCase(strings[0]) &&
+                "info".equalsIgnoreCase(strings[1])) {
                 if (Bukkit.getPlayer(strings[2]).isOnline()) {
                     commandSender.sendMessage("§8[§b异域花园§8] §7玩家§e" + strings[2] + "§7的酒精度为§e" + ExoticGarden.drunkPlayers.get(strings[2]).getAlcohol());
                 } else {
@@ -24,14 +24,14 @@ public class ExoticCommand implements CommandExecutor {
         }
         if (strings.length == 4) {
             if (hasPermission(commandSender, "exoticgarden.admin")) {
-                if (strings[1].equalsIgnoreCase("add")) {
+                if ("add".equalsIgnoreCase(strings[1])) {
                     if (Bukkit.getPlayer(strings[2]).isOnline()) {
                         ExoticGarden.drunkPlayers.get(strings[2]).addAlcohol(Integer.parseInt(strings[3]));
                         commandSender.sendMessage("§8[§b异域花园§8] §7为玩家§e" + strings[2] + "§7增加了§e" + strings[3] + "§酒精度");
                     } else {
                         commandSender.sendMessage("§8[§b异域花园§8] §c指定的玩家不在线！");
                     }
-                } else if (strings[1].equalsIgnoreCase("set")) {
+                } else if ("set".equalsIgnoreCase(strings[1])) {
                     if (Bukkit.getPlayer(strings[2]).isOnline()) {
                         ExoticGarden.drunkPlayers.get(strings[2]).setAlcohol(Integer.parseInt(strings[3]));
                         commandSender.sendMessage("§8[§b异域花园§8] §7将玩家§e" + strings[2] + "§7的酒精度设置为§e" + strings[3]);
