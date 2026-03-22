@@ -1,6 +1,5 @@
 package io.github.thebusybiscuit.exoticgarden.listeners;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -69,7 +68,7 @@ public class PlantsListener implements Listener {
     private final Config cfg;
     private final ExoticGarden plugin;
     private final BlockFace[] faces = {BlockFace.NORTH, BlockFace.NORTH_EAST, BlockFace.EAST, BlockFace.SOUTH_EAST, BlockFace.SOUTH, BlockFace.SOUTH_WEST, BlockFace.WEST, BlockFace.NORTH_WEST};
-	private static Map<String, PlayerSkin> skinCache = new HashMap<>();
+	private static final Map<String, PlayerSkin> skinCache = new HashMap<>();
 
     public PlantsListener(ExoticGarden plugin) {
         this.plugin = plugin;
@@ -79,9 +78,7 @@ public class PlantsListener implements Listener {
 
     public static void optimizedSetSkin(Block block, String skinHashCode, Boolean sendBlockUpdate) {
         if (!skinCache.isEmpty() && skinCache.containsKey(skinHashCode)) {
-        	Bukkit.getScheduler().runTask(ExoticGarden.getInstance(), () -> {
-        		PlayerHead.setSkin(block, skinCache.get(skinHashCode), sendBlockUpdate);
-            });
+        	Bukkit.getScheduler().runTask(ExoticGarden.getInstance(), () -> PlayerHead.setSkin(block, skinCache.get(skinHashCode), sendBlockUpdate));
             
             return;
         }
@@ -90,9 +87,7 @@ public class PlantsListener implements Listener {
         	try {
         		PlayerSkin skin = PlayerSkin.fromHashCode(skinHashCode);
                 skinCache.put(skinHashCode, skin);
-                Bukkit.getScheduler().runTask(ExoticGarden.getInstance(), () -> {
-                    PlayerHead.setSkin(block, skin, sendBlockUpdate);
-                });
+                Bukkit.getScheduler().runTask(ExoticGarden.getInstance(), () -> PlayerHead.setSkin(block, skin, sendBlockUpdate));
         	} catch (Exception e) {
             	e.printStackTrace();
                 // 异常时使用默认皮肤
@@ -174,8 +169,8 @@ public class PlantsListener implements Listener {
                 int chunkZ = e.getChunk().getZ();
 
                 // Middle of chunk between 3-13 (to avoid loading neighbouring chunks)
-                int x = chunkX * 16 + random.nextInt(10) + 3;
-                int z = chunkZ * 16 + random.nextInt(10) + 3;
+                int x = (chunkX << 4) + random.nextInt(10) + 3;
+                int z = (chunkZ << 4) + random.nextInt(10) + 3;
 
                 if ((x < worldLimit && x > -worldLimit) && (z < worldLimit && z > -worldLimit)) {
                     if (PaperLib.isPaper()) {
@@ -200,16 +195,12 @@ public class PlantsListener implements Listener {
 
                 // Get the sizes of the tree being placed
                 // Value is padded +2 blocks to avoid loading neighbouring chunks for block updates
-                try {
-                    tw = tree.getSchematic().getWidth() + 2;
-                    tl = tree.getSchematic().getLength() + 2;
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                tw = tree.getSchematic().getWidth() + 2;
+                tl = tree.getSchematic().getLength() + 2;
 
                 // Ensure schematic fits inside the chunk
-                int x = chunkX * 16 + random.nextInt(16 - tw) + (int) Math.floor((double) tw / 2);
-                int z = chunkZ * 16 + random.nextInt(16 - tl) + (int) Math.floor((double) tl / 2);
+                int x = (chunkX << 4) + random.nextInt(16 - tw) + (int) Math.floor((double) tw / 2);
+                int z = (chunkZ << 4) + random.nextInt(16 - tl) + (int) Math.floor((double) tl / 2);
 
                 if ((x < worldLimit && x > -worldLimit) && (z < worldLimit && z > -worldLimit)) {
                     if (PaperLib.isPaper()) {
@@ -363,7 +354,7 @@ public class PlantsListener implements Listener {
     private void growBush(ChunkPopulateEvent e, int x, int z, Berry berry, Random random, boolean isPaper) {
         for (int y = e.getWorld().getHighestBlockYAt(x, z) + 2; y > 30; y--) {
             Block current = e.getWorld().getBlockAt(x, y, z);
-            if (current.getType() != Material.WATER && !current.getType().isSolid() && berry.isSoil(current.getRelative(BlockFace.DOWN).getType())) {
+            if (current.getType() != Material.WATER && !current.getType().isSolid() && Berry.isSoil(current.getRelative(BlockFace.DOWN).getType())) {
                 BlockStorage.store(current, berry.getItem());
                 switch (berry.getType()) {
                     case BUSH:

@@ -8,7 +8,6 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -28,8 +27,6 @@ import io.github.thebusybiscuit.exoticgarden.schematics.org.jnbt.ShortTag;
 import io.github.thebusybiscuit.exoticgarden.schematics.org.jnbt.Tag;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
-import io.github.thebusybiscuit.slimefun4.libraries.dough.skins.PlayerHead;
-import io.github.thebusybiscuit.slimefun4.libraries.dough.skins.PlayerSkin;
 import io.github.thebusybiscuit.slimefun4.utils.tags.SlimefunTag;
 
 /*
@@ -83,19 +80,14 @@ public class Schematic {
     public static void pasteSchematic(World world, int x1, int y1, int z1, Tree tree, boolean doPhysics) {
         Schematic schematic;
 
-        try {
-            schematic = tree.getSchematic();
-        } catch (IOException e) {
-            ExoticGarden.instance.getLogger().log(Level.WARNING, "Could not paste Schematic for Tree: " + tree.getFruitID() + "_TREE (" + e.getClass().getSimpleName() + ')', e);
-            return;
-        }
+        schematic = tree.getSchematic();
 
         short[] blocks = schematic.getBlocks();
         byte[] blockData = schematic.getData();
 
-        short length = schematic.getLength();
-        short width = schematic.getWidth();
-        short height = schematic.getHeight();
+        short length = schematic.length;
+        short width = schematic.width;
+        short height = schematic.height;
 
         // Performance - avoid repeatedly calculating this value in a loop
         int processedX = x1 - length / 2;

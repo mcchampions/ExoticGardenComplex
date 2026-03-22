@@ -27,7 +27,7 @@ public class Tree {
         this.soils = EnumSet.copyOf(Arrays.asList(soil));
     }
 
-    public Schematic getSchematic() throws IOException {
+    public Schematic getSchematic() {
         if (schematic == null) {
             schematic = Schematic.loadSchematic(new File(ExoticGarden.getInstance().getSchematicsFolder(), fruit + "_TREE.schematic"));
         }

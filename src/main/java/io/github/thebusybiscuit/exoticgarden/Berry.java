@@ -56,7 +56,7 @@ public class Berry {
         return type == PlantType.ORE_PLANT ? this.id.replace("_ESSENCE", "_PLANT") : this.id + "_BUSH";
     }
 
-    public boolean isSoil(Material type) {
+    public static boolean isSoil(Material type) {
         return SOILS.contains(type);
     }
 

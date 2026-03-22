@@ -58,7 +58,7 @@ public abstract class DefaultGUI extends SlimefunItem implements InventoryBlock,
         new BlockMenuPreset(name, getInventoryTitle()) {
 
             public void init() {
-                DefaultGUI.this.constructMenu(this);
+                DefaultGUI.constructMenu(this);
             }
 
 
@@ -137,7 +137,7 @@ public abstract class DefaultGUI extends SlimefunItem implements InventoryBlock,
         new BlockMenuPreset(name, getInventoryTitle()) {
 
             public void init() {
-                DefaultGUI.this.constructMenu(this);
+                DefaultGUI.constructMenu(this);
             }
 
 
@@ -221,7 +221,7 @@ public abstract class DefaultGUI extends SlimefunItem implements InventoryBlock,
         return o;
     }
 
-    private void constructMenu(BlockMenuPreset preset) {
+    private static void constructMenu(BlockMenuPreset preset) {
         for (int i : border) {
             preset.addItem(i, new CustomItemStack(Material.BLACK_STAINED_GLASS_PANE, " "), (player, i1, itemStack, clickAction) -> false);
         }

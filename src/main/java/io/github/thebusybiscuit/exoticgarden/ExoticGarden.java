@@ -39,11 +39,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import com.be.registry.BECommands;
 import com.be.registry.BEFoodRegistry;
 import com.be.registry.BEPlants;
 import com.be.registry.BETrees;
-import com.be.utils.BEListener;
 import com.be.utils.RegistryHandler;
 import com.xzavier0722.mc.plugin.slimefun4.storage.util.StorageCacheUtils;
 
@@ -270,9 +268,6 @@ public class ExoticGarden extends JavaPlugin implements SlimefunAddon {
         BEPlants.onPlantsRegister();
         BETrees.onTreesRegister();
         BEFoodRegistry.register(this);
-        //HeadDropFix.onHeadDropFix();
-        BECommands.onCommandsRegister();
-        Bukkit.getPluginManager().registerEvents(BEListener.getInstance(), ExoticGarden.instance);
 
         /*
         // Auto Updater
@@ -477,7 +472,7 @@ public class ExoticGarden extends JavaPlugin implements SlimefunAddon {
                 new ItemStack[] {null, SlimefunItems.COPPER_DUST, null, SlimefunItems.COPPER_DUST, getItem("COAL_PLANT"), SlimefunItems.COPPER_DUST, null, SlimefunItems.COPPER_DUST, null});
 
         registerMagicalPlant("Magnesium", "镁", new CustomItemStack(SlimefunItems.MAGNESIUM_DUST, 4), "e8c99d857a5b34331699ce6b5449d8d75f6c50b294ea1a29108f66ca086528bb",
-                new ItemStack[] {null, SlimefunItems.ALUMINUM_DUST, null, SlimefunItems.ALUMINUM_DUST, getItem("IRON_PLANT"), SlimefunItems.ALUMINUM_DUST, null, SlimefunItems.ALUMINUM_DUST, null});
+                new ItemStack[] {null, SlimefunItems.MAGNESIUM_DUST, null, SlimefunItems.MAGNESIUM_DUST, getItem("IRON_PLANT"), SlimefunItems.MAGNESIUM_DUST, null, SlimefunItems.MAGNESIUM_DUST, null});
 
         registerMagicalPlant("Aluminum", "铝", new CustomItemStack(SlimefunItems.ALUMINUM_DUST, 4), "f4455341eaff3cf8fe6e46bdfed8f501b461fb6f6d2fe536be7d2bd90d2088aa",
                 new ItemStack[] {null, SlimefunItems.ALUMINUM_DUST, null, SlimefunItems.ALUMINUM_DUST, getItem("IRON_PLANT"), SlimefunItems.ALUMINUM_DUST, null, SlimefunItems.ALUMINUM_DUST, null});

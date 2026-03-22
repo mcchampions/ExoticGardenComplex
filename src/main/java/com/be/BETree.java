@@ -4,11 +4,8 @@ import com.be.utils.RegistryHandler;
 import io.github.thebusybiscuit.exoticgarden.Tree;
 import io.github.thebusybiscuit.exoticgarden.schematics.Schematic;
 import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.entity.EntityType;
 
 import java.io.File;
-import java.io.IOException;
 
 public class BETree extends Tree {
 
@@ -20,7 +17,7 @@ public class BETree extends Tree {
 
 
     @Override
-    public Schematic getSchematic() throws IOException {
+    public Schematic getSchematic() {
         if (this.schematic == null) {
             this.schematic = Schematic.loadSchematic(new File(RegistryHandler.getSchematicsFolder(), getFruitID() + "_TREE.schematic"));
         }

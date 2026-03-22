@@ -67,7 +67,7 @@ public class RegistryHandler {
             (new CustomFood(ExoticGarden.instance.foodItemGroup, new SlimefunItemStack(id + "_PIE", "3418c6b0a29fc1fe791c89774d828ff63d2a9fa6c83373ef3aa47bf3eb79", color + name + "派", "", "&7&o恢复 &b&o6.5 &7&o点饥饿值"), new ItemStack[]{getItem(id), new ItemStack(Material.EGG), new ItemStack(Material.SUGAR), new ItemStack(Material.MILK_BUCKET), SlimefunItems.WHEAT_FLOUR, null, null, null, null}, 13)).register(ExoticGarden.getInstance());
         }
 
-        if (!(new File(getSchematicsFolder(), id + "_TREE.schematic")).exists()) {
+        if (!(new File(schematicsFolder, id + "_TREE.schematic")).exists()) {
             saveSchematic(id + "_TREE");
         }
 
@@ -82,7 +82,7 @@ public class RegistryHandler {
             InputStream input = ExoticGarden.getInstance().getClass().getResourceAsStream("/schematics/" + id + ".schematic");
 
             try {
-                FileOutputStream output = new FileOutputStream(new File(getSchematicsFolder(), id + ".schematic"));
+                FileOutputStream output = new FileOutputStream(new File(schematicsFolder, id + ".schematic"));
 
                 try {
                     byte[] buffer = new byte[1024];
