@@ -188,7 +188,7 @@ public class ExoticGarden extends JavaPlugin implements SlimefunAddon {
                             controller.removeBlock(plant.getLocation());
                             
                             try {
-                            	slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(plant.getLocation(), berry.getID()));
+                            	slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(plant.getLocation(), berry.toBush()));
                             } catch (IllegalStateException illegalStateException) {
                                 // ignore
                             }
@@ -200,7 +200,7 @@ public class ExoticGarden extends JavaPlugin implements SlimefunAddon {
                             fastSession.setBlock(blockPos, BlockTypes.OAK_SAPLING.getDefaultState());
                             controller.removeBlock(block.getLocation());
                             try {
-                            	slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(block.getLocation(), berry.getID()));
+                            	slimefunItemOptional.ifPresent(slimefunItem -> controller.createBlock(block.getLocation(), berry.toBush()));
                             } catch (IllegalStateException illegalStateException) {
                                 // ignore
                             }
